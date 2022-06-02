@@ -32,9 +32,8 @@ namespace rcvio
     private:
         double cam_rate_;
 
-        double sigma_image_noise_x_;
-        double sigma_image_noise_y_;
-
+        double image_noise_sigma_;
+        
         Eigen::Matrix3d Ric_;
         Eigen::Vector3d tic_;
         Eigen::Matrix3d Rci_;

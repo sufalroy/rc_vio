@@ -17,8 +17,10 @@ namespace rcvio
     {
         cam_rate_ = fs_settings["Camera.fps"];
 
-        sigma_image_noise_x_ = fs_settings["Camera.sigma_px"];
-        sigma_image_noise_y_ = fs_settings["Camera.sigma_py"];
+        const float image_noise_sigma_x = fs_settings["Camera.sigma_px"];
+        const float image_noise_sigma_y = fs_settings["Camera.sigma_py"];
+
+        image_noise_sigma_ = std::max(image_noise_sigma_x, image_noise_sigma_y);
 
         cv::Mat T(4, 4, CV_32F);
         fs_settings["Camera.T_BC0"] >> T;
@@ -142,8 +144,8 @@ namespace rcvio
                 -std::sin(phi) * std::cos(psi), -std::cos(phi) * std::sin(psi);
 
             Eigen::Matrix2d Rinv;
-            Rinv << 1 / std::pow(sigma_image_noise_x_, 2), 0,
-                0, 1 / std::pow(sigma_image_noise_y_, 2);
+            Rinv << 1.0 / std::pow(image_noise_sigma_, 2), 0,
+                0, 1.0 / std::pow(image_noise_sigma_, 2);
 
             int max_iter = 10;
             double lambda = 0.01;
@@ -218,7 +220,7 @@ namespace rcvio
                         std::cos(phi), 0,
                         -std::sin(phi) * std::cos(psi), -std::cos(phi) * std::sin(psi);
 
-                    if (std::fabs(last_cost - cost) < 1e-6 || dpfinv.norm() < 1e-6)
+                    if (std::fabs(last_cost - cost) < 1e-6 && dpfinv(2) < 1e-6)
                         break;
 
                     lambda *= 0.1;
@@ -357,7 +359,7 @@ namespace rcvio
 
             Eigen::VectorXd temp_R;
             temp_R.setOnes(DOF, 1);
-            temp_R *= std::pow(sigma_image_noise_x_ > sigma_image_noise_y_ ? sigma_image_noise_x_ : sigma_image_noise_y_, 2);
+            temp_R *= std::pow(image_noise_sigma_, 2);
 
             Eigen::MatrixXd temp_S;
             temp_S = _temp_Hx * Pk1k.block(24, 24, 6 * clone_states, 6 * clone_states) * (_temp_Hx.transpose());
@@ -407,7 +409,7 @@ namespace rcvio
 
             Eigen::VectorXd Ro;
             Ro.setOnes(row_count, 1);
-            Ro *= std::pow(sigma_image_noise_x_ > sigma_image_noise_y_ ? sigma_image_noise_x_ : sigma_image_noise_y_, 2);
+            Ro *= std::pow(image_noise_sigma_, 2);
 
             Eigen::VectorXd rn;
             Eigen::MatrixXd Hn;
@@ -465,7 +467,7 @@ namespace rcvio
                 rn = ro.block(0, 0, rank, 1);
                 Hn = Ho.block(0, 0, rank, Ho.cols());
                 Rn.setOnes(rank, 1);
-                Rn *= std::pow(sigma_image_noise_x_ > sigma_image_noise_y_ ? sigma_image_noise_x_ : sigma_image_noise_y_, 2);
+                Rn *= std::pow(image_noise_sigma_, 2);
             }
             else
             {

@@ -8,23 +8,23 @@ namespace rcvio
 {
     PreIntegrator::PreIntegrator(const cv::FileStorage &fs_settings)
     {
-        sigma_gyro_noise_ = fs_settings["IMU.sigma_g"];
-        sigma_gyro_bias_ = fs_settings["IMU.sigma_wg"];
-        sigma_accel_noise_ = fs_settings["IMU.sigma_a"];
-        sigma_accel_bias_ = fs_settings["IMU.sigma_wa"];
-
-        small_angle_ = fs_settings["IMU.nSmallAngle"];
 
         gravity_ = fs_settings["IMU.nG"];
+        small_angle_ = fs_settings["IMU.nSmallAngle"];
+
+        gyro_noise_sigma_ = fs_settings["IMU.sigma_g"];
+        gyro_rand_walk_sigma_ = fs_settings["IMU.sigma_wg"];
+        accel_noise_sigma_ = fs_settings["IMU.sigma_a"];
+        accel_rand_walk_sigma_ = fs_settings["IMU.sigma_wa"];
+
+        imu_noise_matrix_.setIdentity();
+        imu_noise_matrix_.block<3, 3>(0, 0) *= std::pow(gyro_noise_sigma_, 2);
+        imu_noise_matrix_.block<3, 3>(3, 3) *= std::pow(gyro_rand_walk_sigma_, 2);
+        imu_noise_matrix_.block<3, 3>(6, 6) *= std::pow(accel_noise_sigma_, 2);
+        imu_noise_matrix_.block<3, 3>(9, 9) *= std::pow(accel_rand_walk_sigma_, 2);
 
         xk1k.setZero(26, 1);
         Pk1k.setZero(24, 24);
-
-        sigma_.setIdentity();
-        sigma_.block<3, 3>(0, 0) *= std::pow(sigma_gyro_noise_, 2);
-        sigma_.block<3, 3>(3, 3) *= std::pow(sigma_gyro_bias_, 2);
-        sigma_.block<3, 3>(6, 6) *= std::pow(sigma_accel_noise_, 2);
-        sigma_.block<3, 3>(9, 9) *= std::pow(sigma_accel_bias_, 2);
     }
 
     void PreIntegrator::propagate(Eigen::VectorXd &xkk,
@@ -110,7 +110,7 @@ namespace rcvio
             G.block<3, 3>(15, 6) = -I;
             G.block<3, 3>(18, 3) = I;
             G.block<3, 3>(21, 9) = I;
-            Q = dt * G * sigma_ * (G.transpose());
+            Q = dt * G * imu_noise_matrix_ * (G.transpose());
 
             Pkk.block(0, 0, 24, 24) = phi * (Pkk.block(0, 0, 24, 24)) * (phi.transpose()) + Q;
 

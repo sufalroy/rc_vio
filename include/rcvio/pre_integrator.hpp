@@ -29,11 +29,11 @@ namespace rcvio
         double gravity_;
         double small_angle_;
 
-        double sigma_gyro_noise_;
-        double sigma_accel_noise_;
-        double sigma_gyro_bias_;
-        double sigma_accel_bias_;
+        double gyro_noise_sigma_;
+        double gyro_rand_walk_sigma_;
+        double accel_noise_sigma_;
+        double accel_rand_walk_sigma_;
 
-        Eigen::Matrix<double, 12, 12> sigma_;
+        Eigen::Matrix<double, 12, 12> imu_noise_matrix_;
     };
 }
