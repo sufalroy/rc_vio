@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Config file -->
+    <arg name="config" default="$(find rcvio)/config/rcvio_tumvi.yaml" />
+
+    <!-- Our launch details -->
+    <node name="rcvio" pkg="rcvio" type="rcvio_mono" args="$(arg config)" output="screen">
+    </node>
+
+</launch>
